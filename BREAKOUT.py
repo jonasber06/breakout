@@ -8,6 +8,7 @@ blokker = []
 
 class App:
     def __init__(self):
+        self._seier = False
 
         """
         gjør følgende
@@ -77,7 +78,20 @@ class App:
                 if self.score == 10:
                     self.ball.dx *= 1.5
                     self.ball.dy *= 1.5
-
+                
+                if self.score == 60:
+                    self._seier = True
+    
+    def vunnet(self):
+        #når alle blokkene er borte kjøres denne metoden, og spillet stoppes
+        self.ball.dx = 0
+        self.ball.dy = 0
+        font = pg.font.SysFont(None,30)
+        text = font.render(f'Gratulerer! Spillet er vunnet!', True, (0, 0, 0))        
+        self.vindu.blit(text, (BREDDE // 2 -125, HOYDE // 2))
+        pg.display.flip()
+        pg.time.delay(3000)
+    
     def render(self,vindu):
         vindu.fill((255,255,255))
         self.blokker.render(vindu)
@@ -94,6 +108,8 @@ class App:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+            
+            
 
             self.kollisjon_blokk()
             self.paddle.bevegelse()
@@ -101,11 +117,18 @@ class App:
             self.kollisjon_paddle()
             self.ball.beveg()
 
+            
+
             if self.ball.ypos1 >= HOYDE:
                 running = False
                 print("game over") 
                           
             self.render(self.vindu)
+
+            if self._seier:
+                running = False
+                self.vunnet()
+
 
 class Blokker:
     def lag_blokker(self):
@@ -187,4 +210,3 @@ class Ball:
 
 a = App()
 a.run()
-
