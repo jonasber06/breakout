@@ -2,8 +2,8 @@ import pygame as pg
 import math as m
 from random import randint as r
 
-BREDDE = 700
-HOYDE = 450
+BREDDE = 800
+HOYDE = 600
 clock = pg.time.Clock()
 
 
@@ -32,14 +32,14 @@ class App:
         pg.display.set_caption(f"score: {self.score}")
 
     def kollisjon_paddle(self):
-        x_rekt = self.paddle.xpos
-        y_rekt = self.paddle.ypos
+        x_rekt = self.paddle.hent_xpos()
+        y_rekt = self.paddle.hent_ypos()
 
-        b = ((BREDDE-10*11)/10)+10 #høyde og bredde som paddle har
-        h = ((HOYDE)/3 - 10*7)/6
+        b = self.paddle.hent_b() #høyde og bredde som paddle har
+        h = self.paddle.hent_h()
 
-        x_ball = self.ball.xpos1
-        y_ball = self.ball.ypos1
+        x_ball = self.ball.xpos
+        y_ball = self.ball.ypos
 
         # finner nærmeste punkt på paddle til sirkelens radius
         self.x1 = max(x_rekt, min(x_ball,x_rekt+b))
@@ -59,8 +59,8 @@ class App:
             x_rekt = block[0]
             y_rekt = block[1]
 
-            x_ball = self.ball.xpos1
-            y_ball = self.ball.ypos1
+            x_ball = self.ball.xpos
+            y_ball = self.ball.ypos
 
             b = ((BREDDE-10*11)/10)
             h = ((HOYDE)/3 - 10*7)/6
@@ -114,7 +114,7 @@ class App:
 
     def run(self): 
         self.blokker.lag_blokker()
-
+        self.render(self.vindu)
 
         running = True
         while running: #gameloop
@@ -128,26 +128,27 @@ class App:
                 if self.paddle._sjekk_trykket():
                     self.ball._begynn_bevegelse()
                     self._trykket = True
-
-            self.kollisjon_blokk()
-            self.paddle.bevegelse()
-            self.ball.kollisjon_vegg()
-            self.kollisjon_paddle()
-            self.ball.beveg()
-
-            #dersom spilleren ikke klarer å holde ballen oppe
-            if self.ball.ypos1 >= HOYDE:
-                running = False
-                print("game over") 
             
+            if self._trykket:
+                self.kollisjon_blokk()
+                self.paddle.bevegelse()
+                self.ball.kollisjon_vegg()
+                self.kollisjon_paddle()
+                self.ball.beveg()
+
+                #dersom spilleren ikke klarer å holde ballen oppe
+                if self.ball.ypos >= HOYDE:
+                    running = False
+                    print("game over") 
+                
+
+                            
+                if self._seier:
+                    #når spillet er vunnet, stoppes spill-loop, og det vises en gratulasjon på skjermen
+                    running = False
+                    self.vunnet()
+
             self.render(self.vindu) #oppdatering
-                        
-            if self._seier:
-                #når spillet er vunnet, stoppes spill-loop, og det vises en gratulasjon på skjermen
-                running = False
-                self.vunnet()
-            
-
             clock.tick(60) #60 fps
 
 
@@ -158,15 +159,16 @@ class Blokker:
     def lag_blokker(self):
 
         #genererer liste med [x,y] koordinater for blokkene
+        kol = 10
+        rad = 6
+        mellomrom = BREDDE // 100                      
 
-        ant = 10                      
-        self.b = (BREDDE-ant * 11) / 10
-        self.h = ((HOYDE)/3 - ant * 7) / 6 #hoyde / 3, siden kun den øverste tredjedelen av skjermen skal ha blokker.
-
-        for i in range(0,ant):       #kolonner
-            x = (i+1) * ant + self.b * i
-            for k in range(0,6):    #rader
-                y = (k+1) * ant + self.h * k
+        self.b = BREDDE // 10
+        self.h = HOYDE // 30
+        for i in range(0,kol):       #kolonner
+            x = mellomrom * (i+1) + i * self.b
+            for k in range(0,rad):    #rader
+                y = mellomrom * (k+1) + k * self.h
                 self._blokker.append([x,y])
 
 
@@ -174,7 +176,7 @@ class Blokker:
 
         #tegner det som er i listen av blokkenes posisjoner
         #muliggjør også fjerning av blokker når de kollideres med.
-        
+
         for blokk in self._blokker:
             x = blokk[0]
             y = blokk[1]
@@ -188,18 +190,19 @@ class Blokker:
         self._blokker.remove(el)
 
 class Paddle:
-    def __init__(self, farge = (255,0,0), ypos = HOYDE - 50, fart = 7.5):
-        b = ((BREDDE-10*11)/10)+10
-        self.ypos = ypos
-        self.xpos = BREDDE // 2 - b/2
-        self.farge = farge
-        self.fart = fart
+    def __init__(self):
+
+        self.b = BREDDE // 10
+        self.h = HOYDE // 30
+        self.ypos = HOYDE - self.h*2
+        self.xpos = BREDDE // 2 - self.b/2
+        self.farge = (255,0,0)
+        self.fart = 7.5
 
     def bevegelse(self):
-        b = ((BREDDE-10*11)/10)+10
         keys = pg.key.get_pressed()
 
-        if keys[pg.K_RIGHT] and self.xpos + self.fart < BREDDE - b:
+        if keys[pg.K_RIGHT] and self.xpos + self.fart < BREDDE - self.b:
             self.xpos += self.fart
 
         if keys[pg.K_LEFT] and self.xpos > 0:
@@ -208,32 +211,47 @@ class Paddle:
     def _sjekk_trykket(self):
         keys = pg.key.get_pressed()
 
+
         if keys[pg.K_RIGHT] or keys[pg.K_LEFT]:
             return True
+        return False
     
+    def hent_b(self):
+        return self.b
+    
+    def hent_h(self):
+        return self.h
+    
+    def hent_xpos(self):
+        return self.xpos
+    
+    def hent_ypos(self):
+        return self.ypos
+
     def render(self,vindu):
-        b = ((BREDDE-10*11)/10)+10
-        h = ((HOYDE)/3 - 10*7)/6
-        pg.draw.rect(vindu,self.farge,pg.Rect(self.xpos,self.ypos,b,h))
+        #b = ((BREDDE-10*11)/10)+10
+        #h = ((HOYDE)/3 - 10*7)/6
+        #pg.draw.rect(vindu,self.farge,pg.Rect(self.xpos,self.ypos,b,h))
+        pg.draw.rect(vindu,self.farge,pg.Rect(self.xpos,self.ypos,self.b,self.h))
     
 class Ball:
-    def __init__(self, xpos1 = BREDDE // 2, ypos1 = HOYDE // 2, farge = (0,0,255), r = 10, dx = 0, dy = 0):
-        self.xpos1 = xpos1
-        self.ypos1 = ypos1
-        self.farge = farge
-        self.r = r
-        self.dx = dx
-        self.dy = dy
+    def __init__(self):
+        self.xpos = BREDDE // 2
+        self.ypos = HOYDE // 2
+        self.farge = (0,0,255)
+        self.r = 10
+        self.dx = 0
+        self.dy = 0
 
     def beveg(self):
-        self.xpos1 += self.dx
-        self.ypos1 += self.dy
+        self.xpos += self.dx
+        self.ypos += self.dy
 
     def kollisjon_vegg(self):
-        if self.xpos1 >= BREDDE or self.xpos1 <=0:
+        if self.xpos >= BREDDE or self.xpos <=0:
             self.dx *= -1
         
-        if self.ypos1 <= 0:
+        if self.ypos <= 0:
             self.dy *= -1
     
     def kollisjon_paddle(self):
@@ -249,7 +267,7 @@ class Ball:
         return True
 
     def render(self,vindu):
-        pg.draw.circle(vindu,self.farge,(self.xpos1,self.ypos1),self.r)
+        pg.draw.circle(vindu,self.farge,(self.xpos,self.ypos),self.r)
 
 a = App()
 a.run()
