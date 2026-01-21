@@ -6,8 +6,6 @@ BREDDE = 800
 HOYDE = 600
 clock = pg.time.Clock()
 
-
-
 class App:
     def __init__(self):
         self._seier = False
@@ -122,13 +120,13 @@ class App:
                 if event.type == pg.QUIT:
                     running = False
 
+                #slik begynner ikke spillet før spilleren har trykket på en av pilene
+                if not self._trykket:
+                    if event.type == pg.KEYDOWN:
+                        if event.key == pg.K_RIGHT or event.key == pg.K_LEFT:
+                            self.ball._begynn_bevegelse()
+                            self._trykket = True
 
-            #slik begynner ikke spillet før spilleren har trykket på en av pilene
-            if not self._trykket:
-                if self.paddle._sjekk_trykket():
-                    self.ball._begynn_bevegelse()
-                    self._trykket = True
-            
             if self._trykket:
                 self.kollisjon_blokk()
                 self.paddle.bevegelse()
@@ -141,8 +139,6 @@ class App:
                     running = False
                     print("game over") 
                 
-
-                            
                 if self._seier:
                     #når spillet er vunnet, stoppes spill-loop, og det vises en gratulasjon på skjermen
                     running = False
@@ -150,7 +146,6 @@ class App:
 
             self.render(self.vindu) #oppdatering
             clock.tick(60) #60 fps
-
 
 class Blokker:
     def __init__(self):
@@ -171,9 +166,7 @@ class Blokker:
                 y = mellomrom * (k+1) + k * self.h
                 self._blokker.append([x,y])
 
-
     def render(self,vindu):
-
         #tegner det som er i listen av blokkenes posisjoner
         #muliggjør også fjerning av blokker når de kollideres med.
 
@@ -191,7 +184,6 @@ class Blokker:
 
 class Paddle:
     def __init__(self):
-
         self.b = BREDDE // 10
         self.h = HOYDE // 30
         self.ypos = HOYDE - self.h*2
@@ -208,14 +200,6 @@ class Paddle:
         if keys[pg.K_LEFT] and self.xpos > 0:
             self.xpos -= self.fart
 
-    def _sjekk_trykket(self):
-        keys = pg.key.get_pressed()
-
-
-        if keys[pg.K_RIGHT] or keys[pg.K_LEFT]:
-            return True
-        return False
-    
     def hent_b(self):
         return self.b
     
@@ -229,9 +213,6 @@ class Paddle:
         return self.ypos
 
     def render(self,vindu):
-        #b = ((BREDDE-10*11)/10)+10
-        #h = ((HOYDE)/3 - 10*7)/6
-        #pg.draw.rect(vindu,self.farge,pg.Rect(self.xpos,self.ypos,b,h))
         pg.draw.rect(vindu,self.farge,pg.Rect(self.xpos,self.ypos,self.b,self.h))
     
 class Ball:
@@ -260,11 +241,6 @@ class Ball:
     def _begynn_bevegelse(self):
         self.dy = 4
         self.dx = 4 * (-1) ** r(1,2) #randint, slik at det er tilfeldig hvilken retning ballen begynner
-
-    def _sjekk_bevegelse(self):
-        if self.dy == 0:
-            return False
-        return True
 
     def render(self,vindu):
         pg.draw.circle(vindu,self.farge,(self.xpos,self.ypos),self.r)
